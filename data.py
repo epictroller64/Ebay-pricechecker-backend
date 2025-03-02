@@ -76,10 +76,13 @@ async def init_db():
         FOREIGN KEY (listing_id) REFERENCES listings (id)
     )
     """
+    create_settings_table = """
+    CREATE TABLE IF NOT EXISTS settings (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+        interval INTEGER NOT NULL
+    )
+    """
     
     await execute_query(create_listings_table)
     await execute_query(create_price_history_table)
-
-# Initialize the database when the module is imported
-import asyncio
-asyncio.run(init_db())
+    await execute_query(create_settings_table)

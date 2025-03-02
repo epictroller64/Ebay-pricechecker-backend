@@ -43,3 +43,6 @@ class SelectListing(BaseModel):
 
 
 
+class Settings(BaseModel):
+    interval: int
+

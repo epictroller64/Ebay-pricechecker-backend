@@ -1,31 +1,74 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from fastapi import FastAPI, HTTPException
+from fastapi.concurrency import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 from checker import Checker
+import asyncio
+import uvicorn
+from pydantic import BaseModel
 
-app = Flask(__name__)
-CORS(app)
+from classes import Settings
+from data import init_db
+from settings import get_settings, update_settings
+
 
 checker = Checker()
 
-@app.route('/api/listings', methods=['GET'])
-async def get_listings():
+class ListingRequest(BaseModel):
+    url: str
+
+class ListingDeleteRequest(BaseModel):
+    id: str
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start the update loop task
+    await init_db()
+    asyncio.create_task(checker.update_loop())
+    yield
+app = FastAPI(lifespan=lifespan)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get('/api/settings')
+async def get_settings_handler():
+    return await get_settings()
+
+@app.post('/api/settings')
+async def update_settings_handler(settings: Settings):
+    await update_settings(settings.interval)
+
+@app.get("/api/listings")
+async def get_listings_handler():
     listings = await checker.get_all_listings()
     # Convert listings to a list of dictionaries
     listings_json = [listing.to_dict() for listing in listings]
-    return jsonify(listings_json)
+    return listings_json
 
-@app.route('/api/listings', methods=['POST']) 
-async def add_listing():
-    data = request.get_json()
-    print(data)
-    if not data or 'url' not in data:
-        return jsonify({'error': 'Missing url parameter'}), 400
-        
-    insert_result = await checker.add_listing(data['url'])
+@app.post("/api/listings")
+async def add_listing_handler(listing: ListingRequest):
+    insert_result = await checker.add_or_update_listing(listing.url)
     if insert_result:
-        return jsonify({'success': True, 'id': insert_result})
+        return {"success": True, "id": insert_result}
     else:
-        return jsonify({'error': 'Failed to add listing'}), 500
+        raise HTTPException(status_code=500, detail="Failed to add listing")
 
-if __name__ == '__main__':
-    app.run(port=3000)
+@app.delete("/api/listings")
+async def delete_listing_handler(listing: ListingDeleteRequest):
+    delete_result = await checker.delete_listing(listing.id)
+    if delete_result:
+        return {"success": True}
+
+@app.get("/api/next-update")
+async def get_next_update_handler():
+    next_update = await checker.get_next_update()
+    return {"nextUpdate": next_update, "interval": 20}
+
+if __name__ == "__main__":
+    uvicorn.run("server:app", host="0.0.0.0", port=3000, reload=True)
