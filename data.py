@@ -18,6 +18,15 @@ async def execute_query(query: str, params: tuple = ()) -> int | None:
         await conn.commit()
         return lastrowid
 
+async def execute_query_many(query: str, params: tuple = ()) -> int | None:
+    """Execute a query without returning results"""
+    async with get_db_connection() as conn:
+        cursor = await conn.executemany(query, params)
+        lastrowid = cursor.lastrowid
+        await cursor.close()
+        await conn.commit()
+        return lastrowid
+
 async def select_one(query: str, params: tuple = ()) -> Optional[tuple]:
     """Execute a query and return a single row"""
     async with get_db_connection() as conn:
@@ -79,10 +88,23 @@ async def init_db():
     create_settings_table = """
     CREATE TABLE IF NOT EXISTS settings (
         id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
-        interval INTEGER NOT NULL
+        interval INTEGER NOT NULL,
+        phone_number TEXT,
+        telegram_userid TEXT,
+        email TEXT
+    )
+    """
+    create_reminders_table = """
+    CREATE TABLE IF NOT EXISTS reminders (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+        method TEXT NOT NULL CHECK (method IN ('telegram', 'sms', 'email')),
+        target_product_id TEXT NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('out_of_stock', 'back_in_stock', 'price_drop', 'price_increase')),
+        FOREIGN KEY (target_product_id) REFERENCES listings (id)
     )
     """
     
     await execute_query(create_listings_table)
     await execute_query(create_price_history_table)
     await execute_query(create_settings_table)
+    await execute_query(create_reminders_table)

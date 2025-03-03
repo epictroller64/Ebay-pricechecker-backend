@@ -45,4 +45,33 @@ class SelectListing(BaseModel):
 
 class Settings(BaseModel):
     interval: int
+    phone_number: str
+    telegram_userid: str
+    email: str
 
+
+class SelectReminder(BaseModel):
+    id: str
+    method: str
+    target_product_id: str
+    type: str
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "method": self.method,
+            "target_product_id": self.target_product_id,
+            "type": self.type
+        }
+
+class InsertReminder(BaseModel):
+    method: str
+    target_product_id: str
+    type: str
+
+    def to_dict(self):
+        return {
+            "method": self.method,
+            "target_product_id": self.target_product_id,
+            "type": self.type
+        }
