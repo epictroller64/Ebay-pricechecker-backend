@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Make port 80 available to the world outside this container
-EXPOSE 80
+EXPOSE 2100
 
 # Run the FastAPI application
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "2100"]
