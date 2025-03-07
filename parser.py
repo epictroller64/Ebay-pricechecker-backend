@@ -31,9 +31,16 @@ class ListingParser:
 
         stock_element = bs.select_one(".x-quantity__availability")
         stock = 0
+        found = False
         if stock_element:
-            quantity_element = stock_element.select_one(".ux-textspans--SECONDARY")
-            if quantity_element:
+            quantity_elements = stock_element.select("span")
+            for qe in quantity_elements:
+                if qe.text == "Out of Stock":
+                    found = True
+                    stock = 0
+                    break
+            if found == False:
+                quantity_element = stock_element.select_one(".ux-textspans.ux-textspans--SECONDARY") 
                 try:
                     text = quantity_element.text.strip()
                     if text.startswith("More than"):

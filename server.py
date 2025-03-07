@@ -1,4 +1,5 @@
 import asyncio
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,15 +36,22 @@ class ReminderRequest(BaseModel):
 async def lifespan(app: FastAPI):
     # Start the update loop task
     await init_db()
+    run_tg = os.getenv("RUN_TG") or "TRUE"
+    if run_tg == "FALSE":
+        run_tg = False
+    else:
+        run_tg = True
     asyncio.create_task(checker.update_loop())
-    await telegram_app.initialize()
-    await telegram_app.start()
-    await telegram_app.updater.start_polling()
+    if run_tg:
+        await telegram_app.initialize()
+        await telegram_app.start()
+        await telegram_app.updater.start_polling()
 
     yield
-    await telegram_app.updater.stop()
-    await telegram_app.stop()
-    await telegram_app.shutdown()
+    if run_tg:
+        await telegram_app.updater.stop()
+        await telegram_app.stop()
+        await telegram_app.shutdown()
 
 
 app = FastAPI(lifespan=lifespan)

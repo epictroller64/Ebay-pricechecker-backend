@@ -75,3 +75,9 @@ class InsertReminder(BaseModel):
             "target_product_id": self.target_product_id,
             "type": self.type
         }
+
+
+class CustomDate(BaseModel):
+    day: int
+    month: int
+    year: int
