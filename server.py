@@ -16,6 +16,8 @@ from services.settings_service import SettingsService
 from telegram_bot import telegram_app
 from dotenv import load_dotenv
 
+API_VERSION = 1.01
+
 load_dotenv(override=True)
 
 checker = Checker()
@@ -64,6 +66,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get('/api/api-version')
+def get_apiversion_handler():
+    return {"version": API_VERSION}
 
 @app.get('/api/reminders')
 async def get_reminders_handler():
