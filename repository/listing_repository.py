@@ -17,7 +17,7 @@ class ListingRepository:
             SELECT l.*, ph.price, ph.date, ph.currency 
             FROM listings l
             LEFT JOIN price_history ph ON l.id = ph.listing_id
-            ORDER BY ph.date DESC
+            ORDER BY l.created_at DESC
         """, as_dict=True)
 
         listing_map = {}

@@ -78,7 +78,12 @@ async def get_reminders_handler():
 
 @app.post('/api/reminders')
 async def add_reminder_handler(reminder: ReminderRequest):
-    return await ReminderService().reminder_repository.add_reminder(reminder)
+    try:
+        await ReminderService().reminder_repository.add_reminder(reminder)
+        return {"success": True}
+    except Exception as e:
+        print(str(e))
+        return {"success": False}
 
 @app.get('/api/settings')
 async def get_settings_handler():

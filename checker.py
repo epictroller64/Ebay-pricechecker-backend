@@ -39,8 +39,8 @@ class Checker:
                 sleep_time = max(0, self.next_update - time.time())
                 self.logger.info(f"Sleeping for {sleep_time} seconds")
                 await asyncio.sleep(sleep_time)
-                await self.update_listings()
                 await self.set_next_update()
+                await self.update_listings()
             except Exception as e:
                 self.logger.error(f"Error in update loop: {str(e)}")
                 await asyncio.sleep(10)  # Prevent tight loop on error
@@ -50,10 +50,13 @@ class Checker:
 
     async def update_listings(self):
         listings = await self.listing_service.listing_repository.get_all_listings()
+        promises = []
         for listing in listings:
-            upsert_result = await self.add_or_update_listing(listing.url)
-            if upsert_result:
-                print(f"Upserted listing {listing.url} with id {upsert_result['id']}")
+            promises.append(self.add_or_update_listing(listing.url))
+        results = await asyncio.gather(*promises, return_exceptions=True)
+        for result in results:
+            if result:
+                print(f"Upserted listing {listing.url} with id {result['id']}")
     
     async def add_or_update_listing(self, url: str):
         if not self.validate_url(url):

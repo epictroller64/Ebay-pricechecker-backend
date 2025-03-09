@@ -12,6 +12,10 @@ class ReminderRepository:
         self.reminders = [SelectReminder(id=reminder['id'], method=reminder['method'], target_product_id=reminder['target_product_id'], type=reminder['type']) for reminder in reminders]
 
     async def add_reminder(self, reminder: InsertReminder):
+        #check if already exists
+        await self.get_reminders()
+        if [x for x in self.reminders if x.method == reminder.method and x.target_product_id == reminder.target_product_id]:
+            return
         await execute_query("INSERT INTO reminders (method, target_product_id, type) VALUES (?, ?, ?)", (reminder.method, reminder.target_product_id, reminder.type))
 
     async def delete_reminder(self, reminder_id: str):
