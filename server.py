@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.params import Query
 from checker import Checker
 import uvicorn
 from pydantic import BaseModel
@@ -10,9 +11,10 @@ import logging
 from errors import InvalidUrlError, ListingNotFoundError
 from services.listing_service import ListingService
 from services.reminder_service import ReminderService
-from classes import Settings
+from classes import CustomDate, Settings
 from data import init_db
 from services.settings_service import SettingsService
+from services.statistics_service import StatisticsService
 from telegram_bot import telegram_app
 from dotenv import load_dotenv
 
@@ -109,21 +111,45 @@ async def add_listing_handler(listing: ListingRequest):
         else:
             raise HTTPException(status_code=500, detail="Failed to add listing")
     except InvalidUrlError as e:
+        print(str(e))
         return {"success": False, "error": "Invalid URL"}
     except ListingNotFoundError as e:
+        print(str(e))
         return {"success": False, "error": "Listing not found"}
 
 @app.delete("/api/listings")
-async def delete_listing_handler(listing: ListingDeleteRequest):
-    delete_result = await ListingService().listing_repository.delete_listing(listing.id)
-    if delete_result:
-        return {"success": True}
+async def delete_listing_handler(id: str = Query(..., description="Listing id")):
+    try:
+        delete_result = await ListingService().listing_repository.delete_listing(id)
+        if delete_result:
+            return {"success": True}
+    except Exception as e:
+        print(str(e))
+        return 
+
+@app.delete("/api/reminders")
+async def delete_listing_handler(id: str = Query(..., description="Reminder id")):
+    try:
+        delete_result = await ReminderService().reminder_repository.delete_reminder(id)
+        if delete_result:
+            return {"success": True}
+        return {"success": False}
+    except Exception as e:
+        print(str(e))
+        return {"success": False, "error": "Failed to delete reminders"}
 
 @app.get("/api/next-update")
 async def get_next_update_handler():
     next_update, interval = await checker.get_next_update()
     return {"nextUpdate": next_update, "interval": interval}
 
+
+@app.get("/api/test-statistics")
+async def test_stats_handler():
+    start_date = CustomDate(day=9, month=3, year=2025)
+    end_date = CustomDate(day=10, month=3, year=2025)
+    stats = await StatisticsService().get_price_data_between_dates(listing_ebay_id="256430205325", start_date=start_date, end_date=end_date)
+    return {"success": True, "data": stats}
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

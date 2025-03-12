@@ -10,6 +10,7 @@ class ReminderRepository:
     async def get_reminders(self):
         reminders = await select_all("SELECT * FROM reminders", as_dict=True)
         self.reminders = [SelectReminder(id=reminder['id'], method=reminder['method'], target_product_id=reminder['target_product_id'], type=reminder['type']) for reminder in reminders]
+        return self.reminders
 
     async def add_reminder(self, reminder: InsertReminder):
         #check if already exists

@@ -1,4 +1,5 @@
 
+from datetime import datetime
 from pydantic import BaseModel
 from typing import List
 
@@ -81,3 +82,9 @@ class CustomDate(BaseModel):
     day: int
     month: int
     year: int
+
+    def __str__(self) -> str:
+        return super().__str__(f"{self.day} {self.month} {self.year}")
+
+    def to_datetime(self) -> datetime:
+        return datetime(day=self.day, month=self.month, year=self.year)
