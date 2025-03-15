@@ -88,3 +88,29 @@ class CustomDate(BaseModel):
 
     def to_datetime(self) -> datetime:
         return datetime(day=self.day, month=self.month, year=self.year)
+
+
+
+class SelectUser(BaseModel):
+    id: str
+    password: str
+    email: str
+    created_at: datetime
+
+class InsertUser(BaseModel):
+    password: str
+    email: str
+    created_at: datetime
+
+class Token:
+    email: str
+    id: str
+
+class LoginUser(BaseModel):
+    email: str
+    password: str
+
+class RegisterUser(BaseModel):
+    email: str
+    password: str
+    repeat_password: str

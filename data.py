@@ -27,11 +27,15 @@ async def execute_query_many(query: str, params: tuple = ()) -> int | None:
         await conn.commit()
         return lastrowid
 
-async def select_one(query: str, params: tuple = ()) -> Optional[tuple]:
+async def select_one(query: str, params: tuple = (), as_dict: bool = False) -> Optional[tuple] | dict:
     """Execute a query and return a single row"""
     async with get_db_connection() as conn:
         cursor = await conn.execute(query, params)
-        return await cursor.fetchone()
+        fetched = await  cursor.fetchone()
+        if fetched and as_dict:
+            columns = [desc[0] for desc in cursor.description]
+            return dict(zip(columns, fetched))
+        return fetched 
 
 async def select_all(query: str, params: tuple = (), as_dict: bool = False) -> List[tuple] | List[dict]:
     """Execute a query and return all rows"""
@@ -103,8 +107,17 @@ async def init_db():
         FOREIGN KEY (target_product_id) REFERENCES listings (id)
     )
     """
+    create_users_table = """
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+        email TEXT NOT NULL,
+        password TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """
     
     await execute_query(create_listings_table)
     await execute_query(create_price_history_table)
     await execute_query(create_settings_table)
     await execute_query(create_reminders_table)
+    await execute_query(create_users_table)
