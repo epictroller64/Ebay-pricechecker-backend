@@ -115,9 +115,17 @@ async def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """
+
+    create_zip_table = """
+    CREATE TABLE IF NOT EXISTS zip_files (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+        filename TEXT
+    )
+"""
     
     await execute_query(create_listings_table)
     await execute_query(create_price_history_table)
     await execute_query(create_settings_table)
     await execute_query(create_reminders_table)
+    await execute_query(create_zip_table)
     await execute_query(create_users_table)

@@ -4,16 +4,19 @@ from fastapi import Depends, FastAPI, HTTPException, Response, Request
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Query
+from fastapi.responses import FileResponse
 from checker import Checker
 import uvicorn
 from pydantic import BaseModel
 import logging
 from errors import InvalidUrlError, ListingNotFoundError
+from repository.zip_repository import ZipRepository
 from services.auth_service import AuthService
 from services.listing_service import ListingService
 from services.reminder_service import ReminderService
 from classes import CustomDate, LoginUser, RegisterUser, SelectUser, Settings, Token
 from data import init_db
+from services.scraper_service import ScraperService
 from services.settings_service import SettingsService
 from services.statistics_service import StatisticsService
 from telegram_bot import telegram_app
@@ -82,6 +85,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"], 
 )
 
 
@@ -223,6 +227,24 @@ async def auth_handler(request: Request):
     validation_result = await auth_service.validate_user(session_token)
     return validation_result
 
+@app.get("/api/listing-details")
+async def listing_details_handler(
+    url: str = Query(..., description="Ebay URL"),
+     download_images: bool = Query(..., description="Whether to scrape and download images or not")                       
+     ):
+    scraping_service = ScraperService()
+    zip_id, scraped_listing = await scraping_service.scrape_listing_details(url, download_images)
+    return {"success": True, "data": scraped_listing, "zip_id": zip_id}
+
+@app.get("/api/zip")
+async def zip_dl_handler(zip_id: str = Query(..., description="ZIP File ID")):
+    zip_repo = ZipRepository()
+    zip_data = await zip_repo.get_zip(zip_id)
+    path = zip_data['filename']
+    abspath = os.path.abspath(path)
+    if not os.path.exists(abspath):
+        return {"success": False, "error": "File doesnt exist"} 
+    return FileResponse(abspath, filename=path)
     
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

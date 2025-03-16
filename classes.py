@@ -43,6 +43,16 @@ class SelectListing(BaseModel):
         }
 
 
+class ScrapedListing(BaseModel):
+    id: str
+    title: str
+    url: str
+    stock: int
+    price: float
+    scraped_at: datetime
+    images: list[str]
+    features: dict[str, str]
+    seller_url: str
 
 class Settings(BaseModel):
     interval: int

@@ -23,3 +23,8 @@ class Ebay:
     def get_listing(self, url: str) -> SelectListing:
         response = self.get_response(url)
         return self.parser.parse_listing(response)
+    
+
+    def get_listing_details(self, url: str, download_images: bool):
+        response = self.get_response(url)
+        return self.parser.parse_listing_details(response, download_images)
