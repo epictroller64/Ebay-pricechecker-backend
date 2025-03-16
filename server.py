@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Query
 from fastapi.responses import FileResponse
 from checker import Checker
-import uvicorn
 from pydantic import BaseModel
 import logging
 from errors import InvalidUrlError, ListingNotFoundError
@@ -22,7 +21,7 @@ from services.statistics_service import StatisticsService
 from telegram_bot import telegram_app
 from dotenv import load_dotenv
 
-API_VERSION = 1.01
+API_VERSION = 1.10
 
 load_dotenv(override=True)
 
