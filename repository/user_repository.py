@@ -18,4 +18,5 @@ class UserRepository:
 
     async def get_user_by_email(self, email: str) -> Optional[SelectUser]:
         user = await select_one("SELECT * FROM users WHERE email = ?", (email, ), as_dict=True)
-        return SelectUser(id=user['id'], created_at=user['created_at'], email=user['email'], password=user['password'])
+        if user:
+            return SelectUser(id=user['id'], created_at=user['created_at'], email=user['email'], password=user['password'])
