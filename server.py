@@ -185,8 +185,8 @@ async def register_handler(user: RegisterUser, response: Response):
             value=session_token,
             httponly=True,
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            secure=False,  
-            samesite="lax",
+            secure=True,  
+            samesite="none",
         )
 
         return {"success": True}
@@ -203,8 +203,8 @@ async def login_handler(user: LoginUser, response: Response):
             value=session_token,
             httponly=True,
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            secure=False,  
-            samesite="Lax",
+            secure=True,  
+            samesite="none",
         )
         return {"success": True}
     return login_resp

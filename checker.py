@@ -56,6 +56,8 @@ class Checker:
         results = await asyncio.gather(*promises, return_exceptions=True)
         for result in results:
             if result:
+                if result == BaseException:
+                    print(str(result))
                 print(f"Upserted listing {listing.url} with id {result['id']}")
     
     async def add_or_update_listing(self, url: str):
