@@ -57,7 +57,7 @@ class ListingParser:
         if price_element:
             price_text = price_element.text.strip()
             currency = price_text.split()[0]
-            price = float(price_text.split()[-1].replace('$', '').replace('/ea', '').replace(",", ".")) 
+            price = float(price_text.split()[-1].replace('$', '').replace('/ea', '').replace(",", ".").replace("/db", "")) 
             price_history.append(SelectPriceHistory(price=price, date=datetime.now().isoformat(), currency=currency))
         else:
             currency = None
