@@ -26,7 +26,7 @@ API_VERSION = 1.10
 load_dotenv(override=True)
 
 allowed_origins = [
-    "https://ebay-price-checker-front-end.vercel.app/",
+    "https://ebay-price-checker-front-end.vercel.app",
     "http://127.0.0.1:3000"
 ]
 
