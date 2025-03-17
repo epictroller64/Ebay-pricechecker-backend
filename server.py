@@ -28,7 +28,8 @@ load_dotenv(override=True)
 allowed_origins = [
     "https://ebay-price-checker-front-end.vercel.app",
     "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    "https://app.ohh.ee"
 ]
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
