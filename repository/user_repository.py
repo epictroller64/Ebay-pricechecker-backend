@@ -6,9 +6,11 @@ from data import execute_query, select_one
 
 class UserRepository:
 
-    async def get_user_by_id(self, id: str) ->SelectUser:
+    async def get_user_by_id(self, id: str) -> Optional[SelectUser]:
         result = await select_one("SELECT * FROM users WHERE id = ?", (id,), as_dict=True)
-        return SelectUser(id=result['id'], created_at=result['created_at'], email=result['email'], password=result['password'] )
+        if result:
+            return SelectUser(id=result['id'], created_at=result['created_at'], email=result['email'], password=result['password'] )
+        return None
     
     async def insert_user(self, user: InsertUser):
         result = await execute_query("INSERT INTO users (email, password, created_at) VALUES (?,?,?)", (user.email, user.password, user.created_at))

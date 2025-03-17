@@ -22,15 +22,18 @@ class AuthService:
             decoded_jwt = jwt.decode(token, SECRET_KEY, ALGORITHM)
             user_id = decoded_jwt['id']
             if user_id:
+                print('User id: ', user_id)
                 user = await self.user_repository.get_user_by_id(decoded_jwt['id'])
-                user.password = ''
-                return {"success": True, "user": user}
+                if user:
+                    user.password = ''
+                    return {"success": True, "user": user}
             return {"success": False, "error": "No user found"}
         except ExpiredSignatureError:
             return {"success": False, "error": "Token expired invalid"}
         except JWTError:
             return {"success": False, "error": "Token signature invalid"}
-        except Exception:
+        except Exception as e:
+            print(str(e))
             return {"success": False, "error": "Token failed to be validated"}
         
     async def register(self, user: RegisterUser) -> Dict[str, Union[bool, Optional[str]]]:
