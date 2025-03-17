@@ -222,13 +222,8 @@ def logout_handler(response: Response):
     return {"success": True}
 
 @app.get("/api/auth-validate")
-async def auth_handler(request: Request):
-    auth_service = AuthService()
-    session_token = request.cookies.get("session_token", None)
-    if not session_token:
-        return {"success": False, "error": "Token not found"}
-    validation_result = await auth_service.validate_user(session_token)
-    return validation_result
+async def auth_handler(user: SelectUser = Depends(validate_user)):
+    return {"success": True}
 
 @app.get("/api/listing-details")
 async def listing_details_handler(
