@@ -27,7 +27,8 @@ load_dotenv(override=True)
 
 allowed_origins = [
     "https://ebay-price-checker-front-end.vercel.app",
-    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173"
 ]
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
@@ -223,6 +224,7 @@ def logout_handler(response: Response):
 
 @app.get("/api/auth-validate")
 async def auth_handler(user: SelectUser = Depends(validate_user)):
+    print("Authed user: ", user.id)
     return {"success": True}
 
 @app.get("/api/listing-details")
