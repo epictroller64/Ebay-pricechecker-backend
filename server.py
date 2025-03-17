@@ -25,6 +25,10 @@ API_VERSION = 1.10
 
 load_dotenv(override=True)
 
+allowed_origins = [
+    "https://ebay-price-checker-front-end.vercel.app/",
+    "http://127.0.0.1:3000"
+]
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
 checker = Checker()
@@ -80,7 +84,7 @@ app = FastAPI(lifespan=lifespan)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
