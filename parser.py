@@ -38,6 +38,8 @@ class ListingParser:
             img_elements = image_cotainer.find_all('img')
 
             image_urls = [str(img['src']).replace("l140", "l1600") for img in img_elements if 'src' in img.attrs]
+            data_image_urls = [str(img['data-src']).replace("l140", "l1600") for img in img_elements if 'data-src' in img.attrs]
+            image_urls.extend(data_image_urls)
 
         return ScrapedListing(
                               id=basic_details.id, 
