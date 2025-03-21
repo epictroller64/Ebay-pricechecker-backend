@@ -54,10 +54,10 @@ async def validate_user(request: Request):
     if not session_token:
         raise HTTPException(status_code=401, detail="Token not sent")
     validation_result = await auth_service.validate_user(session_token)
-    if not validation_result['success']:
+    if not validation_result.get('success'):
         raise HTTPException(status_code=401, detail=validation_result['error'])
-    if validation_result['body']['user']:
-        return validation_result['body']['user']
+    if validation_result.get('body').get('user'):
+        return validation_result.get('body').get('user')
     else:
         raise HTTPException(status_code=401, detail="No user found")
 
@@ -192,7 +192,7 @@ async def test_stats_handler():
 async def register_handler(user: RegisterUser, response: Response):
     auth_service = AuthService()
     register_response = await auth_service.register(user)
-    if register_response['success']:
+    if register_response.get('success'):
         session_token = register_response["body"]["token"]
         response.set_cookie(
             key="session_token",
@@ -211,7 +211,7 @@ async def register_handler(user: RegisterUser, response: Response):
 async def login_handler(user: LoginUser, response: Response):
     auth_service = AuthService()
     login_resp = await auth_service.login(user)
-    if login_resp["success"]:
+    if login_resp.get("success"):
         session_token = login_resp["body"]["token"]
         response.set_cookie(
             key="session_token",
@@ -233,6 +233,7 @@ def logout_handler(response: Response):
         httponly=True,
         max_age=-1,
         secure=False,
+        domain=".ohh.ee",
         samesite="Lax"
     )
     return {"success": "User logged out"}
