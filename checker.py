@@ -1,9 +1,9 @@
-from classes import InsertPriceHistory, Settings
+from classes import InsertPriceHistory, SelectListing, Settings
 from ebay import Ebay
 import time
 import asyncio
 import logging
-from typing import List
+from typing import List, Optional
 
 from services.price_history_service import PriceHistoryService
 from services.reminder_service import ReminderService
@@ -13,7 +13,7 @@ from services.settings_service import SettingsService
 class Checker:
     def __init__(self):
         self.ebay = Ebay()
-        self.settings = Settings(interval=20, phone_number="", telegram_userid="", email="")
+        self.settings = Settings(interval=40, phone_number="", telegram_userid="", email="")
         self.next_update = int(time.time() + self.settings.interval)
         self.logger = logging.getLogger(__name__)
         self.reminder_service = ReminderService()
@@ -25,7 +25,6 @@ class Checker:
         self.settings = await self.settings_service.settings_repository.get_settings()
 
     async def get_next_update(self):
-        await self.refresh_settings()
         return self.next_update, self.settings.interval
     
     async def set_next_update(self):
@@ -35,7 +34,6 @@ class Checker:
     async def update_loop(self):
         while True:
             try:
-                await self.refresh_settings()
                 sleep_time = max(0, self.next_update - time.time())
                 self.logger.info(f"Sleeping for {sleep_time} seconds")
                 await asyncio.sleep(sleep_time)
@@ -49,10 +47,11 @@ class Checker:
         await self.listing_service.listing_repository.delete_listing(id)
 
     async def update_listings(self):
+        await self.reminder_service.update_reminders()
         listings = await self.listing_service.listing_repository.get_all_listings()
         promises = []
         for listing in listings:
-            promises.append(self.add_or_update_listing(listing.url))
+            promises.append(self.add_or_update_listing(listing.url, listing))
         results = await asyncio.gather(*promises, return_exceptions=True)
         for result in results:
             if result:
@@ -60,21 +59,20 @@ class Checker:
                     print(str(result))
                 print(f"Upserted listing {listing.url} with id {result['id']}")
     
-    async def add_or_update_listing(self, url: str):
+    async def add_or_update_listing(self, url: str, existing_listing: Optional[SelectListing]):
         if not self.validate_url(url):
             self.logger.error(f"Invalid eBay URL: {url}")
             return None
-        existing_listing = await self.listing_service.listing_repository.get_listing_by_url(url)
         parsed_listing = self.ebay.get_listing(url)
         if existing_listing:
-            await self.reminder_service.reminder_repository.get_reminders_by_target_product_id(existing_listing.id)
+            await self.reminder_service.reminder_repository.get_reminders_by_target_product_id(existing_listing.id, True)
             await self.reminder_service.remind_stock_status(existing_listing, parsed_listing)
             
         if parsed_listing:
             await self.listing_service.listing_repository.upsert_listing(parsed_listing)
             
             listing_id = parsed_listing.id
-            was_inserted = await self.listing_service.listing_repository.get_listing_count(listing_id) == 0
+            was_inserted = not existing_listing 
             
             if parsed_listing.price_history:
                 for price_history in parsed_listing.price_history:

@@ -1,6 +1,6 @@
 import time
 from data import select_all, execute_query
-from classes import SelectListing, InsertListing, SelectPriceHistory
+from classes import DisplayListing, SelectListing, InsertListing, SelectPriceHistory
 from typing import List, Optional
 
 from repository.price_history_repository import PriceHistoryRepository
@@ -11,6 +11,62 @@ class ListingRepository:
 
     async def get_listing_count(self, id: str) -> int:
         return await execute_query("SELECT COUNT(*) FROM listings WHERE id = ?", (id,))
+
+    async def get_all_listings_display(self) -> List[DisplayListing]:
+        """Get all listings suitable for frontend display. More efficent processing."""
+        start_time = time.time()
+        listings = await select_all("""
+            SELECT l.*, ph.price, ph.date, ph.currency 
+            FROM listings l
+            LEFT JOIN price_history ph ON l.id = ph.listing_id
+            ORDER BY ph.date ASC
+        """, as_dict=True)
+
+        listing_map = {}
+        for row in listings:
+            existing_listing = listing_map.get(row['id'], None) 
+            price_change = 0
+            if existing_listing and existing_listing.price != row['price']:
+                #found price change
+                price_change = row['price'] - existing_listing.price
+            if price_change != 0 or existing_listing is None:
+                listing_map[row['id']] = DisplayListing(
+                    id=row['id'],
+                    title=row['title'], 
+                    url=row['url'],
+                    stock=row['stock'],
+                    price=row['price'],
+                    last_price_change=price_change
+                )
+        end_time = time.time()
+        finish_time = end_time - start_time
+        print(f"Time taken: {finish_time:.2f} seconds")
+        return list(listing_map.values())
+
+    async def get_all_listings_base(self) -> List[SelectListing]:
+        """Get all listings without price history attatched, only last one attatched"""
+        listings = await select_all("""
+                                    SELECT l.*, ph.price, ph.date, ph.currency
+                FROM listings l
+                LEFT JOIN (
+                    SELECT *, ROW_NUMBER() OVER (PARTITION BY listing_id ORDER BY date DESC) AS rn
+                    FROM price_history
+                ) ph ON l.id = ph.listing_id AND ph.rn = 1
+                ORDER BY l.created_at DESC;
+""", as_dict=True)
+        final_listings = [
+            SelectListing(
+                id=row['id'],
+                title=row['title'],
+                url=row['url'],
+                stock=row['stock'],
+                price_history=[SelectPriceHistory(
+                        price=row['price'],
+                        date=row['date'],
+                        currency=row['currency'])]
+            ) for row in listings
+        ]
+        return final_listings
 
     async def get_all_listings(self) -> List[SelectListing]:
         """Get all listings with their price history"""

@@ -102,7 +102,7 @@ def get_apiversion_handler():
 
 @app.get('/api/reminders')
 async def get_reminders_handler(user: SelectUser = Depends(validate_user)):
-    return {"success": "OK", "body": await ReminderService().reminder_repository.get_reminders()}
+    return {"success": "OK", "body": await ReminderService().reminder_repository.get_and_update_reminders()}
 
 @app.post('/api/reminders')
 async def add_reminder_handler(reminder: ReminderRequest, user: SelectUser = Depends(validate_user)):
@@ -126,13 +126,12 @@ async def update_settings_handler(settings: Settings, user: SelectUser = Depends
 @app.get("/api/listings")
 async def get_listings_handler():
     start = time.time()
-    listings = await ListingService().listing_repository.get_all_listings()
+    listings = await ListingService().listing_repository.get_all_listings_display()
     # Convert listings to a list of dictionaries
-    listings_json = [listing.to_dict() for listing in listings]
     end = time.time()
     elapsed = end - start
     print(f"Listings handler: {elapsed:.2f}")
-    return {"success": "OK", "body": listings_json}
+    return {"success": "OK", "body": listings}
 
 @app.post("/api/listings")
 async def add_listing_handler(listing: ListingRequest, user: SelectUser = Depends(validate_user)):

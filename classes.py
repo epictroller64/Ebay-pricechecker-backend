@@ -42,6 +42,14 @@ class SelectListing(BaseModel):
             "price_history": [price_history.to_dict() for price_history in self.price_history]
         }
 
+class DisplayListing(BaseModel):
+    id: str
+    title: str
+    stock: int
+    url: str
+    price: float
+    last_price_change: float
+
 
 class ScrapedListing(BaseModel):
     id: str
@@ -74,6 +82,7 @@ class SelectReminder(BaseModel):
             "target_product_id": self.target_product_id,
             "type": self.type
         }
+
 
 class InsertReminder(BaseModel):
     method: str

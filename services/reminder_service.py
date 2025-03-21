@@ -6,11 +6,11 @@ class ReminderService:
     def __init__(self):
         self.reminder_repository = ReminderRepository()
 
-    async def get_reminders(self):
-        await self.reminder_repository.get_reminders()
+    async def update_reminders(self):
+        await self.reminder_repository.get_and_update_reminders()
 
     async def remind_stock_status(self, new_listing: SelectListing, prev_listing: SelectListing):
-        reminders = await self.reminder_repository.get_reminders_by_target_product_id(new_listing.id)
+        reminders = await self.reminder_repository.get_reminders_by_target_product_id(new_listing.id, True) #use cached data to avoid db calls
         if new_listing.stock == 0 and prev_listing.stock > 0:
             for reminder in reminders:
                 if reminder.type == "out_of_stock" and reminder.target_product_id == new_listing.id:
@@ -21,7 +21,7 @@ class ReminderService:
                     await self.send_reminder(reminder, new_listing)
     
     async def remind_price_status(self, new_listing: SelectListing, prev_listing: SelectListing):
-        reminders = await self.reminder_repository.get_reminders_by_target_product_id(new_listing.id)
+        reminders = await self.reminder_repository.get_reminders_by_target_product_id(new_listing.id, True)
         if new_listing.price_history[0].price < prev_listing.price_history[0].price:
             for reminder in reminders:
                 if reminder.type == "price_drop" and reminder.target_product_id == new_listing.id:
