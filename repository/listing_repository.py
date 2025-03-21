@@ -1,3 +1,4 @@
+import time
 from data import select_all, execute_query
 from classes import SelectListing, InsertListing, SelectPriceHistory
 from typing import List, Optional
@@ -13,6 +14,7 @@ class ListingRepository:
 
     async def get_all_listings(self) -> List[SelectListing]:
         """Get all listings with their price history"""
+        start_time = time.time()
         listings = await select_all("""
             SELECT l.*, ph.price, ph.date, ph.currency 
             FROM listings l
@@ -38,7 +40,9 @@ class ListingRepository:
                         currency=row['currency']
                     )
                 )
-        
+        end_time = time.time()
+        finish_time = end_time - start_time
+        print(f"Time taken: {finish_time:.2f} seconds")
         return list(listing_map.values())
 
     async def get_listing_by_id(self, listing_id: str) -> Optional[SelectListing]:

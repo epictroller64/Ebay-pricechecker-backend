@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 from fastapi import Depends, FastAPI, HTTPException, Response, Request
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,7 +30,8 @@ allowed_origins = [
     "https://ebay-price-checker-front-end.vercel.app",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
-    "https://app.ohh.ee"
+    "https://app.ohh.ee",
+    "https://ebay.ohh.ee"
 ]
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
@@ -123,9 +125,13 @@ async def update_settings_handler(settings: Settings, user: SelectUser = Depends
 
 @app.get("/api/listings")
 async def get_listings_handler():
+    start = time.time()
     listings = await ListingService().listing_repository.get_all_listings()
     # Convert listings to a list of dictionaries
     listings_json = [listing.to_dict() for listing in listings]
+    end = time.time()
+    elapsed = end - start
+    print(f"Listings handler: {elapsed:.2f}")
     return {"success": "OK", "body": listings_json}
 
 @app.post("/api/listings")
@@ -166,7 +172,11 @@ async def delete_listing_handler(id: str = Query(..., description="Reminder id")
 
 @app.get("/api/next-update")
 async def get_next_update_handler(user: SelectUser = Depends(validate_user)):
+    start = time.time()
     next_update, interval = await checker.get_next_update()
+    end = time.time()
+    elapsed = end - start
+    print(f"Nextupdate handler: {elapsed:.2f}")
     return {"success": "OK", "body": {"nextUpdate": next_update, "interval": interval}}
 
 

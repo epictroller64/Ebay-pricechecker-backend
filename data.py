@@ -4,6 +4,11 @@ from contextlib import asynccontextmanager
 
 DATABASE_NAME = "listings.db"
 
+async def enable_wal_mode(db):
+    """Enable WAL mode for the SQLite database."""
+    await db.execute("PRAGMA journal_mode=WAL;")
+    print("WAL mode enabled.")
+
 @asynccontextmanager
 async def get_db_connection():
     async with aiosqlite.connect(DATABASE_NAME) as conn:
