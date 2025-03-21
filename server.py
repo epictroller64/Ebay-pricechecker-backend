@@ -54,8 +54,8 @@ async def validate_user(request: Request):
     validation_result = await auth_service.validate_user(session_token)
     if not validation_result['success']:
         raise HTTPException(status_code=401, detail=validation_result['error'])
-    if validation_result.get('user'):
-        return validation_result['user']
+    if validation_result['body']['user']:
+        return validation_result['body']['user']
     else:
         raise HTTPException(status_code=401, detail="No user found")
 
@@ -100,72 +100,74 @@ def get_apiversion_handler():
 
 @app.get('/api/reminders')
 async def get_reminders_handler(user: SelectUser = Depends(validate_user)):
-    return await ReminderService().reminder_repository.get_reminders()
+    return {"success": "OK", "body": await ReminderService().reminder_repository.get_reminders()}
 
 @app.post('/api/reminders')
 async def add_reminder_handler(reminder: ReminderRequest, user: SelectUser = Depends(validate_user)):
     try:
         await ReminderService().reminder_repository.add_reminder(reminder)
-        return {"success": True}
+        return {"success": "Ok"}
     except Exception as e:
         print(str(e))
-        return {"success": False}
+        return {"error": "Failed"}
 
 @app.get('/api/settings')
 async def get_settings_handler(user: SelectUser = Depends(validate_user)):
-    return await SettingsService().settings_repository.get_settings()
+    return {"success": "OK", "body": await SettingsService().settings_repository.get_settings()}
+
 
 @app.post('/api/settings')
 async def update_settings_handler(settings: Settings, user: SelectUser = Depends(validate_user)):
-    await SettingsService().settings_repository.update_settings(settings.interval)
+    await SettingsService().settings_repository.update_settings(settings)
+    return {"success": "OK"}
 
 @app.get("/api/listings")
 async def get_listings_handler():
     listings = await ListingService().listing_repository.get_all_listings()
     # Convert listings to a list of dictionaries
     listings_json = [listing.to_dict() for listing in listings]
-    return listings_json
+    return {"success": "OK", "body": listings_json}
 
 @app.post("/api/listings")
 async def add_listing_handler(listing: ListingRequest, user: SelectUser = Depends(validate_user)):
     try:
         insert_result = await checker.add_or_update_listing(listing.url)
         if insert_result:
-            return {"success": True, "id": insert_result}
+            return {"success": "OK", "body": {"id": insert_result}}
         else:
             raise HTTPException(status_code=500, detail="Failed to add listing")
     except InvalidUrlError as e:
         print(str(e))
-        return {"success": False, "error": "Invalid URL"}
+        return { "error": "Invalid URL"}
     except ListingNotFoundError as e:
         print(str(e))
-        return {"success": False, "error": "Listing not found"}
+        return {"error": "Listing not found"}
 
 @app.delete("/api/listings")
 async def delete_listing_handler(id: str = Query(..., description="Listing id"), user: SelectUser = Depends(validate_user)):
     try:
         delete_result = await ListingService().listing_repository.delete_listing(id)
         if delete_result:
-            return {"success": True}
+            return {"success": "Ok"}
     except Exception as e:
         print(str(e))
-        return 
+        return  {"error": "Failed"}
 
 @app.delete("/api/reminders")
 async def delete_listing_handler(id: str = Query(..., description="Reminder id"), user: SelectUser = Depends(validate_user)):
     try:
         delete_result = await ReminderService().reminder_repository.delete_reminder(id)
         if delete_result:
-            return {"success": True}
-        return {"success": False}
+            return {"success": "Deleted successfully"}
+        return {"error": "Failed"}
     except Exception as e:
         print(str(e))
-        return {"success": False, "error": "Failed to delete reminders"}
+        return {"error": "Failed to delete reminders"}
 
 @app.get("/api/next-update")
 async def get_next_update_handler(user: SelectUser = Depends(validate_user)):
     next_update, interval = await checker.get_next_update()
-    return {"nextUpdate": next_update, "interval": interval}
+    return {"success": "OK", "body": {"nextUpdate": next_update, "interval": interval}}
 
 
 @app.get("/api/test-statistics")
@@ -173,7 +175,7 @@ async def test_stats_handler():
     start_date = CustomDate(day=9, month=3, year=2025)
     end_date = CustomDate(day=10, month=3, year=2025)
     stats = await StatisticsService().get_price_data_between_dates(listing_ebay_id="256430205325", start_date=start_date, end_date=end_date)
-    return {"success": True, "data": stats}
+    return {"success": "OK", "body": stats}
 
 
 @app.post("/api/register")
@@ -181,7 +183,7 @@ async def register_handler(user: RegisterUser, response: Response):
     auth_service = AuthService()
     register_response = await auth_service.register(user)
     if register_response['success']:
-        session_token = register_response["token"]
+        session_token = register_response["body"]["token"]
         response.set_cookie(
             key="session_token",
             value=session_token,
@@ -192,7 +194,7 @@ async def register_handler(user: RegisterUser, response: Response):
             samesite="none",
         )
 
-        return {"success": True}
+        return {"success": "Registration successful", "body": {"session_token": session_token, "user_id": register_response['body']['user_id']}}
     return register_response
 
 @app.post("/api/login")
@@ -200,7 +202,7 @@ async def login_handler(user: LoginUser, response: Response):
     auth_service = AuthService()
     login_resp = await auth_service.login(user)
     if login_resp["success"]:
-        session_token = login_resp["token"]
+        session_token = login_resp["body"]["token"]
         response.set_cookie(
             key="session_token",
             value=session_token,
@@ -210,7 +212,7 @@ async def login_handler(user: LoginUser, response: Response):
             secure=True,  
             samesite="none",
         )
-        return {"success": True}
+        return {"success": "User logged in", "body": {"session_token": session_token, "user_id": login_resp['body']['user_id']}}
     return login_resp
 
 @app.get("/api/logout")
@@ -223,12 +225,12 @@ def logout_handler(response: Response):
         secure=False,
         samesite="Lax"
     )
-    return {"success": True}
+    return {"success": "User logged out"}
 
 @app.get("/api/auth-validate")
 async def auth_handler(user: SelectUser = Depends(validate_user)):
     print("Authed user: ", user.id)
-    return {"success": True}
+    return {"success": "User validated"}
 
 @app.get("/api/listing-details")
 async def listing_details_handler(
@@ -237,7 +239,7 @@ async def listing_details_handler(
      ):
     scraping_service = ScraperService()
     zip_id, scraped_listing = await scraping_service.scrape_listing_details(url, download_images)
-    return {"success": True, "data": scraped_listing, "zip_id": zip_id}
+    return {"success": "Listing retrieved", "body": {"data": scraped_listing, "zip_id": zip_id}}
 
 @app.get("/api/zip")
 async def zip_dl_handler(zip_id: str = Query(..., description="ZIP File ID")):
@@ -246,7 +248,7 @@ async def zip_dl_handler(zip_id: str = Query(..., description="ZIP File ID")):
     path = zip_data['filename']
     abspath = os.path.abspath(path)
     if not os.path.exists(abspath):
-        return {"success": False, "error": "File doesnt exist"} 
+        return {"error": "File doesnt exist"} 
     return FileResponse(abspath, filename=path)
     
 logging.basicConfig(level=logging.INFO)

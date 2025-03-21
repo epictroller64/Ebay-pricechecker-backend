@@ -22,38 +22,37 @@ class AuthService:
             decoded_jwt = jwt.decode(token, SECRET_KEY, ALGORITHM)
             user_id = decoded_jwt['id']
             if user_id:
-                print('User id: ', user_id)
                 user = await self.user_repository.get_user_by_id(decoded_jwt['id'])
                 if user:
                     user.password = ''
-                    return {"success": True, "user": user}
-            return {"success": False, "error": "No user found"}
+                    return {"success": "OK", "body": {"user": user}}
+            return {"error": "No user found"}
         except ExpiredSignatureError:
-            return {"success": False, "error": "Token expired invalid"}
+            return {"error": "Token expired invalid"}
         except JWTError:
-            return {"success": False, "error": "Token signature invalid"}
+            return {"error": "Token signature invalid"}
         except Exception as e:
             print(str(e))
-            return {"success": False, "error": "Token failed to be validated"}
+            return {"error": "Token failed to be validated"}
         
-    async def register(self, user: RegisterUser) -> Dict[str, Union[bool, Optional[str]]]:
+    async def register(self, user: RegisterUser):
         existing_user = await self.user_repository.get_user_by_email(user.email)
         if existing_user:
-            return {"success": False, "error": "User already exists"}
+            return {"error": "User already exists"}
         hashed_password = self.hash_password(user.password)
         result = await self.user_repository.insert_user(InsertUser(created_at=datetime.now(), email=user.email, password=hashed_password))
         session_token = self.generate_session_token(user.email, result)
-        return {"success": True, "token": session_token} 
+        return {"success": "OK", "body": {"token": session_token, "user_id": result}}
     
     async def login(self, user: LoginUser):
         existing_user = await self.user_repository.get_user_by_email(user.email)
         if not existing_user:
-            return {"success": False, "error": "User does not exist"}
+            return {"error": "User does not exist"}
         psswd_compare = self.verify_password(user.password, existing_user.password)
         if psswd_compare:
             session_token = self.generate_session_token(existing_user.email, existing_user.id)
-            return {"success": True, "token": session_token} 
-        return {"success": False, "error": "Invalid password"}
+            return {"success": "OK", "body": { "token": session_token, "user_id": existing_user.id} }
+        return {"error": "Invalid password"}
 
     def hash_password(self, plainpassword: str):
         encoded = plainpassword.encode('utf-8')
