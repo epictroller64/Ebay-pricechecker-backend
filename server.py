@@ -21,6 +21,8 @@ from services.settings_service import SettingsService
 from services.statistics_service import StatisticsService
 from telegram_bot import telegram_app
 from dotenv import load_dotenv
+import websockets
+
 
 API_VERSION = 1.10
 
