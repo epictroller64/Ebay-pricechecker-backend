@@ -16,6 +16,7 @@ fastapi==0.115.10
 flask-cors==5.0.1
 h11==0.14.0
 httpcore==1.0.7
+httptools==0.6.4
 httpx==0.28.1
 idna==3.10
 itsdangerous==2.2.0
@@ -28,6 +29,7 @@ pydantic_core==2.27.2
 python-dotenv==1.0.1
 python-jose==3.4.0
 python-telegram-bot==21.11.1
+PyYAML==6.0.2
 requests==2.32.3
 rsa==4.9
 six==1.17.0
@@ -37,4 +39,6 @@ starlette==0.46.0
 typing_extensions==4.12.2
 urllib3==2.3.0
 uvicorn==0.34.0
+watchfiles==1.0.4
+websockets==15.0.1
 Werkzeug==3.1.3
