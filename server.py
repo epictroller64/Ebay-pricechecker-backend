@@ -1,7 +1,7 @@
 import asyncio
 import os
 import time
-from fastapi import Depends, FastAPI, HTTPException, Response, Request, WebSocket
+from fastapi import Depends, FastAPI, HTTPException, Response, Request, WebSocket, WebSocketDisconnect
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Query
@@ -11,6 +11,7 @@ from pydantic import BaseModel
 import logging
 from errors import InvalidUrlError, ListingNotFoundError
 from repository.zip_repository import ZipRepository
+from services.ws_service import ws_service
 from services.auth_service import AuthService
 from services.listing_service import ListingService
 from services.reminder_service import ReminderService
@@ -21,10 +22,9 @@ from services.settings_service import SettingsService
 from services.statistics_service import StatisticsService
 from telegram_bot import telegram_app
 from dotenv import load_dotenv
-import websockets
 
 
-API_VERSION = 1.10
+API_VERSION = 1.20
 
 load_dotenv(override=True)
 
@@ -263,13 +263,26 @@ async def zip_dl_handler(zip_id: str = Query(..., description="ZIP File ID")):
         return {"error": "File doesnt exist"} 
     return FileResponse(abspath, filename=path)
 
+@app.get("/api/ws-auth")
+async def ws_auth_handler(user: SelectUser = Depends(validate_user)):
+    ws_token = ws_service.generate_session_token(user.email, user.id)
+    return {"success": "OK", "body": ws_token}
 
-@app.websocket('/ws')
-async def websocket_handler(websocket: WebSocket):
+@app.websocket('/ws/{session_token}')
+async def websocket_handler(websocket: WebSocket, session_token: str):
     await websocket.accept()
-    while True:
-        message =  await websocket.receive_text()
-        print(message)
-    
+    try:
+        while True:
+            message = await websocket.receive_json()
+            if message.get("type") == "connect":
+                connect_resp = await ws_service.connect(session_token, websocket)
+                if connect_resp.get('success'):
+                    await websocket.send_json({"type": "connection", "body": {"success":"Connected"}})
+                else:
+                    await websocket.send_json( {"type": "connection", "body": {"error":"Failed"}})
+                print(connect_resp)
+            print(message)
+    except WebSocketDisconnect:
+        ws_service.disconnect(session_token) 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

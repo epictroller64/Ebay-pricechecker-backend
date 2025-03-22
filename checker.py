@@ -1,3 +1,6 @@
+import json
+
+from fastapi.encoders import jsonable_encoder
 from classes import InsertPriceHistory, SelectListing, Settings
 from ebay import Ebay
 import time
@@ -9,11 +12,12 @@ from services.price_history_service import PriceHistoryService
 from services.reminder_service import ReminderService
 from services.listing_service import ListingService
 from services.settings_service import SettingsService
+from services.ws_service import ws_service 
 
 class Checker:
     def __init__(self):
         self.ebay = Ebay()
-        self.settings = Settings(interval=40, phone_number="", telegram_userid="", email="")
+        self.settings = Settings(interval=20, phone_number="", telegram_userid="", email="")
         self.next_update = int(time.time() + self.settings.interval)
         self.logger = logging.getLogger(__name__)
         self.reminder_service = ReminderService()
@@ -58,6 +62,14 @@ class Checker:
                 if result == BaseException:
                     print(str(result))
                 print(f"Upserted listing {listing.url} with id {result['id']}")
+        await self.broadcast_updates()
+
+    async def broadcast_updates(self):
+        listings = await self.listing_service.listing_repository.get_all_listings_display()
+        listings = [jsonable_encoder(x) for x in listings]
+        js = {"type": "update", "body": listings}
+        
+        await ws_service.broadcast_message(js)
     
     async def add_or_update_listing(self, url: str, existing_listing: Optional[SelectListing]):
         if not self.validate_url(url):

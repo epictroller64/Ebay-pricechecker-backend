@@ -50,6 +50,16 @@ class DisplayListing(BaseModel):
     price: float
     last_price_change: float
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "stock": self.stock,
+            "url": self.url,
+            "price": self.price,
+            "last_price_change": self.last_price_change
+        }
+
 
 class ScrapedListing(BaseModel):
     id: str
