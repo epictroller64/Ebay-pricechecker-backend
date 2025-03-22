@@ -64,3 +64,4 @@ class ScraperService:
             return downloaded_files
         except Exception as e:
             print(str(e))
+            return []

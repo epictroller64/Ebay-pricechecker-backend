@@ -1,7 +1,7 @@
 import asyncio
 import os
 import time
-from fastapi import Depends, FastAPI, HTTPException, Response, Request
+from fastapi import Depends, FastAPI, HTTPException, Response, Request, WebSocket
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Query
@@ -260,6 +260,14 @@ async def zip_dl_handler(zip_id: str = Query(..., description="ZIP File ID")):
     if not os.path.exists(abspath):
         return {"error": "File doesnt exist"} 
     return FileResponse(abspath, filename=path)
+
+
+@app.websocket('/ws')
+async def websocket_handler(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        message =  await websocket.receive_text()
+        print(message)
     
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
