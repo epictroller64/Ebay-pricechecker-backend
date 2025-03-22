@@ -10,6 +10,7 @@ from checker import Checker
 from pydantic import BaseModel
 import logging
 from errors import InvalidUrlError, ListingNotFoundError
+from repository.listing_repository import ListingRepository
 from repository.zip_repository import ZipRepository
 from services.ws_service import ws_service
 from services.auth_service import AuthService
@@ -138,7 +139,8 @@ async def get_listings_handler():
 @app.post("/api/listings")
 async def add_listing_handler(listing: ListingRequest, user: SelectUser = Depends(validate_user)):
     try:
-        insert_result = await checker.add_or_update_listing(listing.url)
+        existing_listing = await ListingRepository().get_listing_by_url(listing.url)
+        insert_result = await checker.add_or_update_listing(listing.url, existing_listing)
         if insert_result:
             return {"success": "OK", "body": {"id": insert_result}}
         else:
