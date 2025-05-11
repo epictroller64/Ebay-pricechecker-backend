@@ -22,11 +22,14 @@ class WSService:
     def add_websocket(self, websocket: WebSocket):
         self.websocket = websocket
 
-    async def send_message(self, user_id: str):
+    async def send_message(self, user_id: str, message_obj):
         target_user = self.users.get(user_id)
         if target_user:
             user, websocket = target_user
-            await websocket.send_json({"type": "update", "body": "Sending to " + user.email})
+            await websocket.send_json(message_obj)
+    
+    def get_online_users(self):
+        return [x[0] for x in self.users.items()]
 
     async def broadcast_message(self, message_obj):
         for k, v in self.users.items():

@@ -8,6 +8,7 @@ import asyncio
 import logging
 from typing import List, Optional
 
+from repository.listing_relations_repository import ListingRelationsRepository
 from services.price_history_service import PriceHistoryService
 from services.reminder_service import ReminderService
 from services.listing_service import ListingService
@@ -17,7 +18,7 @@ from services.ws_service import ws_service
 class Checker:
     def __init__(self):
         self.ebay = Ebay()
-        self.settings = Settings(interval=20, phone_number="", telegram_userid="", email="")
+        self.settings = Settings(interval=20, phone_number="", telegram_userid="", email="", user_id="") 
         self.next_update = int(time.time() + self.settings.interval)
         self.logger = logging.getLogger(__name__)
         self.reminder_service = ReminderService()
@@ -55,7 +56,7 @@ class Checker:
         listings = await self.listing_service.listing_repository.get_all_listings()
         promises = []
         for listing in listings:
-            promises.append(self.add_or_update_listing(listing.url, listing))
+            promises.append(self.add_or_update_listing(listing.url, listing, None))
         results = await asyncio.gather(*promises, return_exceptions=True)
         for result in results:
             if result:
@@ -65,13 +66,20 @@ class Checker:
         await self.broadcast_updates()
 
     async def broadcast_updates(self):
-        listings = await self.listing_service.listing_repository.get_all_listings_display()
-        listings = [jsonable_encoder(x) for x in listings]
-        js = {"type": "update", "body": listings}
-        
-        await ws_service.broadcast_message(js)
+        ### Only send updates to correct users
+        all_listings = await self.listing_service.listing_repository.get_all_listings_display()
+        all_listing_relations = await ListingRelationsRepository().get_all_listing_relations()
+        current_online_users = ws_service.get_online_users()
+        for user in current_online_users:
+            listing_relations = [x['listing_id'] for x in all_listing_relations if x['user_id'] == user]
+            ## Pick out matching listings
+            listings = [x for x in all_listings if x.id in listing_relations]
+            listings = [jsonable_encoder(x) for x in listings]
+            if listings:
+                js = {"type": "update", "body": listings}
+                await ws_service.send_message(user, js)
     
-    async def add_or_update_listing(self, url: str, existing_listing: Optional[SelectListing]):
+    async def add_or_update_listing(self, url: str, existing_listing: Optional[SelectListing], user_id: Optional[str]):
         if not self.validate_url(url):
             self.logger.error(f"Invalid eBay URL: {url}")
             return None
@@ -81,7 +89,7 @@ class Checker:
             await self.reminder_service.remind_stock_status(existing_listing, parsed_listing)
             
         if parsed_listing:
-            await self.listing_service.listing_repository.upsert_listing(parsed_listing)
+            await self.listing_service.listing_repository.upsert_listing(parsed_listing, user_id)
             
             listing_id = parsed_listing.id
             was_inserted = not existing_listing 

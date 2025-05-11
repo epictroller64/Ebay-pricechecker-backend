@@ -3,7 +3,8 @@ from jose import ExpiredSignatureError, JWTError, jwt
 import os
 from typing import Dict, Optional, Union
 import bcrypt
-from classes import InsertUser, LoginUser, RegisterUser, SelectUser
+from classes import InsertUser, LoginUser, RegisterUser, SelectUser, Settings
+from repository.settings_repository import SettingsRepository
 from repository.user_repository import UserRepository
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -42,6 +43,8 @@ class AuthService:
         hashed_password = self.hash_password(user.password)
         result = await self.user_repository.insert_user(InsertUser(created_at=datetime.now(), email=user.email, password=hashed_password))
         session_token = self.generate_session_token(user.email, result)
+        ### Create default settings insert
+        await SettingsRepository().insert_settings(Settings(user_id=result, phone_number="", telegram_userid="", email=user.email, interval=60))
         return {"success": "OK", "body": {"token": session_token, "user_id": result}}
     
     async def login(self, user: LoginUser):

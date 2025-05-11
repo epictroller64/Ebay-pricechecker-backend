@@ -73,6 +73,7 @@ class ScrapedListing(BaseModel):
     seller_url: str
 
 class Settings(BaseModel):
+    user_id: str
     interval: int
     phone_number: str
     telegram_userid: str
@@ -119,6 +120,10 @@ class CustomDate(BaseModel):
         return datetime(day=self.day, month=self.month, year=self.year)
 
 
+class ListingRelation(BaseModel):
+    id: str
+    listing_id: str
+    user_id: str
 
 class SelectUser(BaseModel):
     id: str

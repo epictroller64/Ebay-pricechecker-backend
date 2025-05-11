@@ -25,7 +25,7 @@ from telegram_bot import telegram_app
 from dotenv import load_dotenv
 
 
-API_VERSION = 1.20
+API_VERSION = 1.30
 
 load_dotenv(override=True)
 
@@ -118,7 +118,7 @@ async def add_reminder_handler(reminder: ReminderRequest, user: SelectUser = Dep
 
 @app.get('/api/settings')
 async def get_settings_handler(user: SelectUser = Depends(validate_user)):
-    return {"success": "OK", "body": await SettingsService().settings_repository.get_settings()}
+    return {"success": "OK", "body": await SettingsService().settings_repository.get_settings_by_user_id(user.id)}
 
 
 @app.post('/api/settings')
@@ -127,9 +127,9 @@ async def update_settings_handler(settings: Settings, user: SelectUser = Depends
     return {"success": "OK"}
 
 @app.get("/api/listings")
-async def get_listings_handler():
+async def get_listings_handler(user: SelectUser = Depends(validate_user)):
     start = time.time()
-    listings = await ListingService().listing_repository.get_all_listings_display()
+    listings = await ListingService().listing_repository.get_all_listings_by_user_id(user.id)
     # Convert listings to a list of dictionaries
     end = time.time()
     elapsed = end - start
@@ -140,7 +140,7 @@ async def get_listings_handler():
 async def add_listing_handler(listing: ListingRequest, user: SelectUser = Depends(validate_user)):
     try:
         existing_listing = await ListingRepository().get_listing_by_url(listing.url)
-        insert_result = await checker.add_or_update_listing(listing.url, existing_listing)
+        insert_result = await checker.add_or_update_listing(listing.url, existing_listing, user.id)
         if insert_result:
             return {"success": "OK", "body": {"id": insert_result}}
         else:
