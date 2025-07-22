@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv(override=True)
 import asyncio
 import os
 import time
@@ -22,12 +24,10 @@ from services.scraper_service import ScraperService
 from services.settings_service import SettingsService
 from services.statistics_service import StatisticsService
 from telegram_bot import telegram_app
-from dotenv import load_dotenv
 
 
 API_VERSION = 1.30
 
-load_dotenv(override=True)
 
 allowed_origins = [
     "https://ebay-price-checker-front-end.vercel.app",

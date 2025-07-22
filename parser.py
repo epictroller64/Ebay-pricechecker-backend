@@ -54,6 +54,11 @@ class ListingParser:
 
     def parse_listing(self, response: requests.Response) -> SelectListing:
         bs = BeautifulSoup(response.text, "html.parser")
+        if "Pardon Our Interruption..." in bs.text:
+            raise Exception("Captcha detected")
+        file = open("bs.html", "w", encoding="utf-8")
+        file.write(bs.prettify())
+        file.close()
         price_element = bs.select_one(".x-bin-price__content .x-price-primary .ux-textspans")
         price_history = []
         if price_element:

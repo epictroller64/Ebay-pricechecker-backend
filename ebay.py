@@ -1,4 +1,4 @@
-import requests
+from curl_cffi import requests
 from classes import SelectListing
 from errors import InvalidUrlError, ListingNotFoundError
 from parser import ListingParser
@@ -9,7 +9,7 @@ class Ebay:
 
     def get_response(self, url: str) -> requests.Response:
         try:
-            response = requests.get(url)
+            response = requests.get(url, impersonate="chrome")
             response.raise_for_status()
             return response
         except requests.exceptions.RequestException as e:
